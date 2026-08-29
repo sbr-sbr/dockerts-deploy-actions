@@ -19,9 +19,19 @@ cd "$APP_DIR"
 # The ubuntu user is in the docker group, but fall back to sudo on a host where
 # it is not so the deploy still works on a freshly provisioned box.
 if docker info >/dev/null 2>&1; then
-  DOCKER="docker"
+  SUDO=""
 else
-  DOCKER="sudo docker"
+  SUDO="sudo"
+fi
+DOCKER="$SUDO docker"
+
+# Compose v2 ships as a docker plugin. When it is missing, docker parses the -f
+# below as a top-level flag and dies with "unknown shorthand flag: 'f' in -f",
+# which says nothing about the real problem — so check for it up front.
+if ! $DOCKER compose version >/dev/null 2>&1; then
+  echo "docker compose (v2) is not available on this host." >&2
+  echo "Install it with: sudo apt-get update && sudo apt-get install -y docker-compose-plugin" >&2
+  exit 1
 fi
 COMPOSE="$DOCKER compose -f $COMPOSE_FILE"
 
@@ -33,6 +43,22 @@ if [ -n "${REGISTRY_TOKEN:-}" ]; then
 fi
 
 # ------------------------------------------------------------------------ env --
+# The DSN below is a URL, so any reserved character in the credentials has to be
+# percent-encoded or the connection string silently parses wrong (or not at all).
+urlencode() {
+  local s="$1" i c out=""
+  for (( i = 0; i < ${#s}; i++ )); do
+    c="${s:i:1}"
+    case "$c" in
+      [a-zA-Z0-9.~_-]) out+="$c" ;;
+      *) out+="$(printf '%%%02X' "'$c")" ;;
+    esac
+  done
+  printf '%s' "$out"
+}
+DB_USER_ENC="$(urlencode "${POSTGRES_USER}")"
+DB_PASSWORD_ENC="$(urlencode "${POSTGRES_PASSWORD}")"
+
 # Rendered fresh every deploy so the file on disk always matches the workflow
 # inputs. Written atomically; 0600 because it holds the database password.
 echo "==> Writing ${APP_DIR}/.env"
@@ -42,7 +68,7 @@ POSTGRES_USER=${POSTGRES_USER}
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 POSTGRES_DB=${POSTGRES_DB}
 POSTGRES_HOST_PORT=${POSTGRES_HOST_PORT}
-DATABASE_URL=postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+DATABASE_URL=postgresql+psycopg://${DB_USER_ENC}:${DB_PASSWORD_ENC}@db:5432/${POSTGRES_DB}
 BACKEND_IMAGE=${BACKEND_IMAGE}
 FRONTEND_IMAGE=${FRONTEND_IMAGE}
 BACKEND_HOST_PORT=${BACKEND_HOST_PORT}
