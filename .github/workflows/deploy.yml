@@ -93,15 +93,35 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Secrets pasted into the GitHub UI routinely pick up trailing newlines,
+      # which silently corrupt every path and host built from them. Strip them
+      # once here rather than debugging "$'/home/ubuntu/app\n\n\n'" later.
+      - name: Resolve deploy inputs
+        id: cfg
+        env:
+          RAW_DIR: ${{ secrets.EC2_TARGET_DIR }}
+          RAW_HOST: ${{ secrets.EC2_HOST }}
+          RAW_USER: ${{ secrets.EC2_USERNAME }}
+          RAW_PORT: ${{ secrets.EC2_PORT }}
+        run: |
+          clean() { printf '%s' "$1" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
+          dir="$(clean "$RAW_DIR")"
+          {
+            echo "dir=${dir:-/home/ubuntu/app}"
+            echo "host=$(clean "$RAW_HOST")"
+            echo "user=$(clean "$RAW_USER")"
+            echo "port=$(clean "$RAW_PORT")"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Copy deploy files to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
+          host: ${{ steps.cfg.outputs.host }}
+          username: ${{ steps.cfg.outputs.user }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          port: ${{ secrets.EC2_PORT }}
+          port: ${{ steps.cfg.outputs.port }}
           source: "deploy/docker-compose.prod.yml,deploy/deploy.sh"
-          target: ${{ secrets.EC2_TARGET_DIR || '/home/ubuntu/app' }}
+          target: ${{ steps.cfg.outputs.dir }}
           # Strips the deploy/ prefix so both files land directly in the target dir.
           strip_components: 1
           overwrite: true
@@ -109,10 +129,10 @@ jobs:
       - name: Run deployment
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
+          host: ${{ steps.cfg.outputs.host }}
+          username: ${{ steps.cfg.outputs.user }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          port: ${{ secrets.EC2_PORT }}
+          port: ${{ steps.cfg.outputs.port }}
           # Values are passed as env vars rather than interpolated into the script
           # body, so secrets never end up in the command line or shell history.
           envs: APP_DIR,REGISTRY,REGISTRY_USER,REGISTRY_TOKEN,BACKEND_IMAGE,FRONTEND_IMAGE,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,POSTGRES_HOST_PORT,BACKEND_HOST_PORT,FRONTEND_HOST_PORT,CORS_ORIGINS,LOG_LEVEL
@@ -127,7 +147,7 @@ jobs:
             bash "$APP_DIR/deploy.sh"
 
         env:
-          APP_DIR: ${{ secrets.EC2_TARGET_DIR || '/home/ubuntu/app' }}
+          APP_DIR: ${{ steps.cfg.outputs.dir }}
           REGISTRY: ${{ env.REGISTRY }}
           REGISTRY_USER: ${{ github.actor }}
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
