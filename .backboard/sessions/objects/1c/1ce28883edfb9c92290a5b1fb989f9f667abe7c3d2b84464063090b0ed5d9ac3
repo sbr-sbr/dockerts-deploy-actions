@@ -2,10 +2,10 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 
-type Theme = "light" | "dark" | "red" | "purple" | "blue" | "green";
+type Theme = "light" | "dark" | "red" | "purple" | "blue";
 
 // Cycle order for the toggle: each press advances to the next theme.
-const ORDER: Theme[] = ["light", "dark", "red", "purple", "blue", "green"];
+const ORDER: Theme[] = ["light", "dark", "red", "purple", "blue"];
 
 // Themes carried by a class on <html>; "light" is the absence of all of them.
 const THEME_CLASSES = ORDER.filter((t) => t !== "light");
@@ -16,7 +16,6 @@ const ICON: Record<Theme, string> = {
   red: "☀",
   purple: "✦",
   blue: "◈",
-  green: "❖",
 };
 
 const LABEL: Record<Theme, string> = {
@@ -25,7 +24,6 @@ const LABEL: Record<Theme, string> = {
   red: "Red mode",
   purple: "Purple mode",
   blue: "Blue mode",
-  green: "Green mode",
 };
 
 // The theme lives on <html> (set pre-paint by the inline script in the root layout),

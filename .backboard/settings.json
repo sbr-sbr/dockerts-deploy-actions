@@ -1,0 +1,11 @@
+{
+	"permissions": {
+		"allow": [
+			"execute(grep -rn:*)",
+			"edit(/home/riles1670/dockerts-deploy-actions/frontend/src/app/layout.tsx)",
+			"edit(/home/riles1670/dockerts-deploy-actions/frontend/src/app/globals.css)",
+			"edit(/home/riles1670/dockerts-deploy-actions/frontend/src/components/theme-toggle.tsx)",
+			"execute(cd /home/riles1670/dockerts-deploy-actions/frontend:*)"
+		]
+	}
+}

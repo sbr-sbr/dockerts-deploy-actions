@@ -1,0 +1,18 @@
+# Root-level ignore. Build contexts are ./backend and ./frontend (each with its
+# own .dockerignore); this keeps any root-context build small too.
+.git/
+.github/
+**/node_modules/
+**/.next/
+**/__pycache__/
+**/.venv/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/coverage/
+.env
+.env.*
+!.env.example
+**/.DS_Store
+**/*.log
+tmp/
