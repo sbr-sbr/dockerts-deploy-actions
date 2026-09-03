@@ -112,6 +112,7 @@ jobs:
             echo "user=$(clean "$RAW_USER")"
             echo "port=$(clean "$RAW_PORT")"
           } >> "$GITHUB_OUTPUT"
+
       - name: Prepare target directory
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -122,6 +123,11 @@ jobs:
           script: |
             mkdir -p ${{ steps.cfg.outputs.dir }}
             chmod 755 ${{ steps.cfg.outputs.dir }}
+            # Add user to docker group if not already a member
+            sudo usermod -aG docker ${{ steps.cfg.outputs.user }} || true
+            # Create docker socket group access if needed
+            sudo chown root:docker /var/run/docker.sock || true
+            sudo chmod 660 /var/run/docker.sock || true
 
       - name: Copy deploy files to EC2
         uses: appleboy/scp-action@v0.1.7
