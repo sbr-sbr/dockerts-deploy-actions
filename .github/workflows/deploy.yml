@@ -135,7 +135,7 @@ jobs:
           # Strips the deploy/ prefix so both files land directly in the target dir.
           strip_components: 1
           overwrite: true
-          chmod: "0644"  # Add this line for readable files
+          chmod: "0755"  # Add this line for readable files
 
       - name: Run deployment
         uses: appleboy/ssh-action@v1.2.0
