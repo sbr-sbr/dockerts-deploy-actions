@@ -121,13 +121,9 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: ${{ steps.cfg.outputs.port }}
           script: |
-            mkdir -p ${{ steps.cfg.outputs.dir }}
+            sudo mkdir -p ${{ steps.cfg.outputs.dir }}
+            sudo chown ${{ steps.cfg.outputs.user }}:${{ steps.cfg.outputs.user }} ${{ steps.cfg.outputs.dir }}
             chmod 755 ${{ steps.cfg.outputs.dir }}
-            # Add user to docker group if not already a member
-            sudo usermod -aG docker ${{ steps.cfg.outputs.user }} || true
-            # Create docker socket group access if needed
-            sudo chown root:docker /var/run/docker.sock || true
-            sudo chmod 660 /var/run/docker.sock || true
 
       - name: Copy deploy files to EC2
         uses: appleboy/scp-action@v0.1.7
