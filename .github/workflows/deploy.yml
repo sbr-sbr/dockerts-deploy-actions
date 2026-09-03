@@ -112,6 +112,16 @@ jobs:
             echo "user=$(clean "$RAW_USER")"
             echo "port=$(clean "$RAW_PORT")"
           } >> "$GITHUB_OUTPUT"
+      - name: Prepare target directory
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ steps.cfg.outputs.host }}
+          username: ${{ steps.cfg.outputs.user }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ steps.cfg.outputs.port }}
+          script: |
+            mkdir -p ${{ steps.cfg.outputs.dir }}
+            chmod 755 ${{ steps.cfg.outputs.dir }}
 
       - name: Copy deploy files to EC2
         uses: appleboy/scp-action@v0.1.7
